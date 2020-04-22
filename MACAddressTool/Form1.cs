@@ -149,9 +149,11 @@ namespace MACAddressTool
                             throw new Exception("Failed to open the registry key");
 
                         // Sanity check
+                        /*
                         if (regkey.GetValue("AdapterModel") as string != this.adaptername
                             && regkey.GetValue("DriverDesc") as string != this.adaptername)
                             throw new Exception("Adapter not found in registry");
+                        */
 
                         // Ask if we really want to do this
                         string question = value.Length > 0 ?
