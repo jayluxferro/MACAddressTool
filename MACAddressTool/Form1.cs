@@ -115,7 +115,7 @@ namespace MACAddressTool
                 {
                     try
                     {
-                        using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, false))
+                        using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, RegistryKeyPermissionCheck.ReadWriteSubTree))
                         {
                             return regkey.GetValue("NetworkAddress").ToString();
                         }
@@ -143,17 +143,11 @@ namespace MACAddressTool
                     if (value.Length > 0 && !Adapter.IsValidMac(value, false))
                         throw new Exception(value + " is not a valid mac address");
 
-                    using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, true))
+                    using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, RegistryKeyPermissionCheck.ReadWriteSubTree))
                     {
                         if (regkey == null)
                             throw new Exception("Failed to open the registry key");
 
-                        // Sanity check
-                        /*
-                        if (regkey.GetValue("AdapterModel") as string != this.adaptername
-                            && regkey.GetValue("DriverDesc") as string != this.adaptername)
-                            throw new Exception("Adapter not found in registry");
-                        */
 
                         // Ask if we really want to do this
                         string question = value.Length > 0 ?
@@ -165,7 +159,7 @@ namespace MACAddressTool
                         if (proceed != DialogResult.Yes)
                             return false;
 
-                        // Attempt to disable the adepter
+                        // Attempt to disable the adapter
                         var result = (uint)adapter.InvokeMethod("Disable", null);
                         if (result != 0)
                             throw new Exception("Failed to disable network adapter.");
@@ -212,7 +206,7 @@ namespace MACAddressTool
             /// <returns>A MAC address having 01 as the least significant bits of the first byte, but otherwise random.</returns>
             public static string GetNewMac()
             {
-                System.Random r = new System.Random();
+                Random r = new Random();
 
                 byte[] bytes = new byte[6];
                 r.NextBytes(bytes);
@@ -278,6 +272,9 @@ namespace MACAddressTool
         public Form1()
         {
             InitializeComponent();
+
+            // Escalating privileges to write to HKLM.
+            new RegistryPermission(PermissionState.Unrestricted).Assert();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -337,14 +334,24 @@ namespace MACAddressTool
         /// <param name="mac">The MAC address to set.</param>
         private void SetRegistryMac(string mac)
         {
+            // disable 'Update Button'
+            UpdateButton.Enabled = false;
+            progressBar.Visible = true;
+            progressBar.Value = 1;
+
             Adapter a = AdaptersComboBox.SelectedItem as Adapter;
 
             if (a.SetRegistryMac(mac))
             {
                 System.Threading.Thread.Sleep(100);
                 UpdateAddresses();
+                progressBar.Value = 100;
                 MessageBox.Show("Done!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+
+            // re-enable 'Update Button'
+            UpdateButton.Enabled = true;
+            progressBar.Visible = false;
         }
 
         private void RereadButton_Click(object sender, EventArgs e)
