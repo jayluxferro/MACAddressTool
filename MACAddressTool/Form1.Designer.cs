@@ -53,7 +53,9 @@
             // 
             // CurrentMacTextBox
             // 
+            this.CurrentMacTextBox.CharacterCasing = System.Windows.Forms.CharacterCasing.Upper;
             this.CurrentMacTextBox.Location = new System.Drawing.Point(229, 77);
+            this.CurrentMacTextBox.MaxLength = 12;
             this.CurrentMacTextBox.Name = "CurrentMacTextBox";
             this.CurrentMacTextBox.Size = new System.Drawing.Size(96, 20);
             this.CurrentMacTextBox.TabIndex = 1;

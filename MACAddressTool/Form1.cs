@@ -81,6 +81,15 @@ namespace MACAddressTool
                 }
             }
 
+
+            // Format MAC Address
+            public string formatMAC(string mac)
+            {
+                
+                 return mac.Replace("-", "").ToUpper();
+                
+            }
+
             /// <summary>
             /// Get the MAC address as reported by the adapter.
             /// </summary>
@@ -90,7 +99,7 @@ namespace MACAddressTool
                 {
                     try
                     {
-                        return BitConverter.ToString(this.ManagedAdapter.GetPhysicalAddress().GetAddressBytes()).Replace("-", "").ToUpper();
+                        return this.formatMAC(BitConverter.ToString(this.ManagedAdapter.GetPhysicalAddress().GetAddressBytes()));
                     }
                     catch { return null; }
                 }
@@ -117,7 +126,7 @@ namespace MACAddressTool
                     {
                         using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, RegistryKeyPermissionCheck.ReadWriteSubTree))
                         {
-                            return regkey.GetValue("NetworkAddress").ToString();
+                            return this.formatMAC(regkey.GetValue("NetworkAddress").ToString());
                         }
                     }
                     catch
@@ -140,7 +149,7 @@ namespace MACAddressTool
                 {
                     // If the value is not the empty string, we want to set NetworkAddress to it,
                     // so it had better be valid
-                    if (value.Length > 0 && !Adapter.IsValidMac(value, false))
+                    if (value.Length > 0 && !Adapter.IsValidMac(value))
                         throw new Exception(value + " is not a valid mac address");
 
                     using (RegistryKey regkey = Registry.LocalMachine.OpenSubKey(this.RegistryKey, RegistryKeyPermissionCheck.ReadWriteSubTree))
@@ -225,7 +234,7 @@ namespace MACAddressTool
             /// <param name="mac">The string.</param>
             /// <param name="actual">false if the address is a locally administered address, true otherwise.</param>
             /// <returns>true if the string is a valid MAC address, false otherwise.</returns>
-            public static bool IsValidMac(string mac, bool actual)
+            public static bool IsValidMac(string mac)
             {
                 // 6 bytes == 12 hex characters (without dashes/dots/anything else)
                 if (mac.Length != 12)
@@ -239,12 +248,10 @@ namespace MACAddressTool
                 if (!Regex.IsMatch(mac, "^[0-9A-F]*$"))
                     return false;
 
-                if (actual)
-                    return true;
-
                 // If we're here, then the second character should be a 2, 6, A or E
-                char c = mac[1];
-                return (c == '2' || c == '6' || c == 'A' || c == 'E');
+                /* char c = mac[1];
+                 return (c == '2' || c == '6' || c == 'A' || c == 'E');*/
+                return true;
             }
 
             /// <summary>
@@ -253,9 +260,9 @@ namespace MACAddressTool
             /// <param name="mac">The address.</param>
             /// <param name="actual">false if the address is a locally administered address, true otherwise.</param>
             /// <returns>true if valid, false otherwise.</returns>
-            public static bool IsValidMac(byte[] bytes, bool actual)
+            public static bool IsValidMac(byte[] bytes)
             {
-                return IsValidMac(Adapter.MacToString(bytes), actual);
+                return IsValidMac(Adapter.MacToString(bytes));
             }
 
             /// <summary>
@@ -283,7 +290,7 @@ namespace MACAddressTool
              * we would not want to change the address. Most of them have an impossible
              * MAC address. */
             foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces().Where(
-                    a => Adapter.IsValidMac(a.GetPhysicalAddress().GetAddressBytes(), true)
+                    a => Adapter.IsValidMac(a.GetPhysicalAddress().GetAddressBytes())
                 ).OrderByDescending(a => a.Speed))
             {
                 AdaptersComboBox.Items.Add(new Adapter(adapter));
@@ -314,7 +321,7 @@ namespace MACAddressTool
 
         private void UpdateButton_Click(object sender, EventArgs e)
         {
-            if (!Adapter.IsValidMac(CurrentMacTextBox.Text, false))
+            if (!Adapter.IsValidMac(CurrentMacTextBox.Text))
             {
                 MessageBox.Show("Entered MAC-address is not valid; will not update.", "Invalid MAC-address specified", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -361,7 +368,7 @@ namespace MACAddressTool
 
         private void CurrentMacTextBox_TextChanged(object sender, EventArgs e)
         {
-            this.UpdateButton.Enabled = Adapter.IsValidMac(this.CurrentMacTextBox.Text, false);
+            this.UpdateButton.Enabled = Adapter.IsValidMac(this.CurrentMacTextBox.Text);
         }
     }
 }
